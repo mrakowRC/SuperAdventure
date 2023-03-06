@@ -12,6 +12,8 @@ namespace Engine
     {
         public int Gold { get; set; }
         public int ExperiencePoints { get; set; }
+
+        public Weapon CurrentWeapon { get; set; }
         public int Level
         {
             get { return ((ExperiencePoints / 100) + 1); }
@@ -64,6 +66,13 @@ namespace Engine
                     playerQuest.IsCompleted = isCompleted;
                     player.Quests.Add(playerQuest);
                 }
+
+                if (playerData.SelectSingleNode("/Player/Stats/CurrentWeapon") != null)
+                {
+                    int currentWeaponID = Convert.ToInt32(playerData.SelectSingleNode("/Player/Stats/CurrentWeapon").InnerText);
+                    player.CurrentWeapon = (Weapon)World.ItemByID(currentWeaponID);
+                }
+
                 return player;
             }
             catch
@@ -71,6 +80,7 @@ namespace Engine
                 // If there was an error with the XML data, return a default player object
                 return Player.CreateDefaultPlayer();
             }
+
         }
 
         public string ToXmlString()
@@ -128,7 +138,16 @@ namespace Engine
                 playerQuest.Attributes.Append(isCompletedAttribute);
                 playerQuests.AppendChild(playerQuest);
             }
+
+            if (CurrentWeapon != null)
+            {
+                XmlNode currentWeapon = playerData.CreateElement("CurrentWeapon");
+                currentWeapon.AppendChild(playerData.CreateTextNode(this.CurrentWeapon.ID.ToString()));
+                stats.AppendChild(currentWeapon);
+            }
+
             return playerData.InnerXml; // The XML document, as a string, so we can save the data to disk
+
         }
 
         public bool HasRequiredItemToEnterThisLocation(Location location)
