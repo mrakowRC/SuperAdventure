@@ -7,6 +7,7 @@ using System.Data;
 using System.ComponentModel;
 using System.Collections.Generic;
 using Engine;
+using System.IO;
 
 namespace SuperAdvententure
 {
@@ -14,21 +15,30 @@ namespace SuperAdvententure
     {
         private Player _player;
         private Monster _currentMonster;
+        private const string PLAYER_DATA_FILE_NAME = "PlayerData.xml";
 
         public SuperAdventure()
         {
             InitializeComponent();
-
-
-            _player = new Player(10, 10, 20, 0, 1);
-            MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
-            _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
-
-            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
-            lblGold.Text = _player.Gold.ToString();
-            lblExperience.Text = _player.ExperiencePoints.ToString();
-            lblLevel.Text = _player.Level.ToString();
+            if (File.Exists(PLAYER_DATA_FILE_NAME))
+            {
+                _player = Player.CreatePlayerFromXmlString(File.ReadAllText(PLAYER_DATA_FILE_NAME));
+            }
+            else
+            {
+                _player = Player.CreateDefaultPlayer();
+            }
+            MoveTo(_player.CurrentLocation);
+            UpdatePlayerStats();
         }
+
+        private void ScrollToBottomOfMessage()
+        {
+            rtbMessages.SelectionStart = rtbMessages.Text.Length;
+            rtbMessages.ScrollToCaret();
+        }
+
+
 
         private void btnNorth_Click(object sender, EventArgs e)
         {
@@ -48,6 +58,15 @@ namespace SuperAdvententure
         private void btnWest_Click(object sender, EventArgs e)
         {
             MoveTo(_player.CurrentLocation.LocationToWest);
+        }
+
+        private void UpdatePlayerStats()
+        {
+            //Refresh player information and inventory controls
+            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
+            lblGold.Text = _player.Gold.ToString();
+            lblExperience.Text = _player.ExperiencePoints.ToString();
+            lblLevel.Text = _player.Level.ToString();
         }
 
         private void MoveTo(Location newLocation)
@@ -146,6 +165,7 @@ namespace SuperAdvententure
                     // Add the quest to the player's quest list
                     _player.Quests.Add(new PlayerQuest(newLocation.QuestAvailableHere));
                 }
+
             }
 
             // Does the location have a monster?
@@ -190,6 +210,8 @@ namespace SuperAdvententure
 
             // Refresh player's potions combobox
             UpdatePotionListInUI();
+
+            UpdatePlayerStats();
         }
 
         private void UpdateInventoryListInUI()
@@ -400,6 +422,8 @@ namespace SuperAdvententure
                     MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
                 }
             }
+
+            UpdatePlayerStats();
         }
 
         private void btnUsePotion_Click(object sender, EventArgs e)
@@ -453,6 +477,12 @@ namespace SuperAdvententure
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
             UpdateInventoryListInUI();
             UpdatePotionListInUI();
+        }
+
+        private void SuperAdventure_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            File.WriteAllText(PLAYER_DATA_FILE_NAME, _player.ToXmlString());
+            
         }
     }
 }
